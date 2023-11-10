@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" 
+    integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" 
+    crossorigin="anonymous" referrerpolicy="no-referrer" /> 
+    <link rel="shortcut icon" href="./assets/logo.ico" type="image/x-icon"> 
+    <link rel="stylesheet" href="./assets/styles.css">
+    <title> MistralTalk </title>
+</head>
+<body>
+    
+    <div class="container">
+        <div class="header">
+            <h3> MistralTalk 🗣️: Your voice, our technology </h3>
+        </div>
+
+        <div class="info">
+            <a href="http://vinayhajare-mistraltalk.hf.space" target="_blank" title=" Created By Vinay Hajare">
+                <span> 
+                    Welcome to MistralTalk💬
+                </span>
+                <p>
+                    Empower Conversation with Mistral 7B LLM 
+                </p> 
+            </a>
+        </div>
+
+        <div class="chat-container">
+            <div id="chat-log">
+
+            </div>
+        </div>
+
+        <div class="input-container">
+            <input type="text" name="user-query" id="user-input" placeholder="Enter your message">
+            <button id="send-btn">
+                <i class="fa-solid fa-paper-plane" id="btn-icon"></i>
+            </button>
+        </div>
+
+    </div>
+    <script type="module"> 
+        import { HfInference } from 'https://cdn.jsdelivr.net/npm/@huggingface/inference@2.6.4/+esm';
+        const HF_TOKEN = "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"
+        const inference = new HfInference(HF_TOKEN); 
+
+        const chatLog = document.getElementById('chat-log'),
+              userInput = document.getElementById('user-input'),
+              sendButton = document.getElementById('send-btn'),
+              buttonIcon = document.getElementById('btn-icon'),
+              info = document.querySelector('.info');
+
+        sendButton.addEventListener('click', sendQuery);
+        userInput.addEventListener('keydown',(event) => {
+            if(event.key == 'Enter'){
+                sendQuery();
+            }
+        });
+
+        // Sending query to the LLM
+        async function sendQuery(){
+            const query = userInput.value.trim();
+            if( query == '' ){
+                return;
+            }else{
+                appendQuery('user', query);
+                let formattedQuery = "<s>";
+                formattedQuery = formattedQuery + "<INST>" + query + "</INST>";
+                userInput.value = '';
+                let parameters = {
+                    max_new_tokens : 250,
+                    repetition_penalty : 1.0,
+                    temperature : 0.9,
+                    return_full_text : false
+                };
+                const result = await inference.textGeneration({
+                        model: 'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1',
+                        inputs: formattedQuery,
+                        parameters: parameters,
+                    });
+                appendQuery('mistral', result.generated_text);
+                buttonIcon.classList.add('fa-solid', 'fa-paper-plane');
+                buttonIcon.classList.remove('fas', 'fa-spinner', 'fa-pulse');
+            }
+        }
+
+        // Putting response on the DOM
+        function appendQuery(role, query){
+            info.style.display = 'none';
+            buttonIcon.classList.remove('fa-solid', 'fa-paper-plane');
+            buttonIcon.classList.add('fas', 'fa-spinner', 'fa-pulse');
+
+            const messagaeElement = document.createElement('div'),
+                      iconElement = document.createElement('div'),
+                      chatElement = document.createElement('div'),
+                      icon = document.createElement('i');
+
+            chatElement.classList.add('chat-box');
+            icon.classList.add('icon');
+            messagaeElement.classList.add(role);
+            messagaeElement.innerText = query;
+
+            if(role === 'user'){
+                icon.classList.add('fa-regular', 'fa-user');
+                iconElement.setAttribute('id', 'user-icon');
+            }else{
+                icon.classList.add('fa-solid', 'fa-robot');
+                iconElement.setAttribute('id', 'mistral-icon');
+            }
+
+            iconElement.appendChild(icon);
+            chatElement.appendChild(iconElement);
+            chatElement.appendChild(messagaeElement);
+            chatLog.appendChild(chatElement);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+    </script>       
+</body>
+</html>
